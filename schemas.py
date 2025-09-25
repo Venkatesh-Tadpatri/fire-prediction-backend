@@ -87,6 +87,22 @@ class RiskResponse(BaseModel):
     created_at: str  # or datetime if you prefer
 
 
+class UPSDataSchema(BaseModel):
+    ups_id: str
+    ups_name: str
+    I: float
+    V: float
+    PF: float
+    TUPS: float
+    IL: float
+    THD: float
+
+class RiskResponse(BaseModel):
+    risk_score: float
+    risk_level: str
+    created_at: datetime    
+
+
 
 
 

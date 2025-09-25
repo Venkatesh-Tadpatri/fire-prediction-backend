@@ -9,14 +9,15 @@ import pytz
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from models import UPSData
 
 from fastapi import BackgroundTasks
 
 # ✅ Absolute imports
-from fire_prediction_backend.database import SessionLocal, engine
-from fire_prediction_backend import models, schemas
-from fire_prediction_backend.schemas import SensorData as SensorDataSchema
-from fire_prediction_backend.models import User
+from database import SessionLocal, engine
+import models, schemas
+from schemas import SensorData as SensorDataSchema
+from models import User
 
 from passlib.context import CryptContext
 
@@ -118,7 +119,12 @@ class PanelNameRequest(BaseModel):
     panel_name: str      
 
 class PanelNameRequest(BaseModel):
-    panel_name: str        
+    panel_name: str  
+
+# Request schema to pass ups_id or ups_name
+class UPSIdRequest(BaseModel):
+    ups_id: str = None
+    ups_name: str = None          
 
 
 @app.post("/get-sensor-data-by-id", response_model=schemas.SensorData)
@@ -628,3 +634,146 @@ def update_panel_risk(request: PanelNameRequest, db: Session = Depends(get_db)):
 #         risk_level=panel.risk_level,
 #         created_at=panel.created_at.isoformat()
 #     )
+
+
+#---------------------------------------------------------------------------------------------------------------
+
+
+# # Risk calculation function using real UPS values
+# def real_values_calculate_ups_risk(ups: UPSData):
+#     # Prevent division by zero
+#     I_score = ups.I / ups.I if ups.I else 0
+#     T_score = (ups.TUPS - 0) / ups.TUPS if ups.TUPS else 0  # Assuming min 0
+#     IL_score = ups.IL / ups.IL if ups.IL else 0
+#     THD_score = ups.THD / ups.THD if ups.THD else 0
+#     PF_score = 1 - ups.PF if ups.PF else 0
+#     V_score = 0  # Not considered
+
+#     # TRS calculation with weights
+#     WEIGHTS = {"I": 0.2, "V": 0.1, "PF": 0.1, "T": 0.3, "IL": 0.2, "THD": 0.1}
+#     TRS = (
+#         WEIGHTS["I"] * I_score +
+#         WEIGHTS["V"] * V_score +
+#         WEIGHTS["PF"] * PF_score +
+#         WEIGHTS["T"] * T_score +
+#         WEIGHTS["IL"] * IL_score +
+#         WEIGHTS["THD"] * THD_score
+#     )
+
+#     # Determine risk level
+#     if TRS < 0.3:
+#         risk_level = "Normal"
+#     elif TRS < 0.6:
+#         risk_level = "Medium"
+#     else:
+#         risk_level = "High"
+
+#     return TRS, risk_level
+
+# # UPS risk calculation endpoint
+# @app.post("/calculate_ups_risk", response_model=schemas.RiskResponse)
+# def calculate_ups_risk(request: UPSIdRequest, db: Session = Depends(get_db)):
+#     if not request.ups_id and not request.ups_name:
+#         raise HTTPException(status_code=400, detail="Provide either ups_id or ups_name")
+
+#     # Fetch UPS data
+#     if request.ups_id:
+#         ups = db.query(UPSData).filter(UPSData.ups_id == request.ups_id).first()
+#     else:
+#         ups = db.query(UPSData).filter(UPSData.ups_name == request.ups_name).first()
+
+#     if not ups:
+#         raise HTTPException(status_code=404, detail="UPS not found")
+
+#     # Calculate risk using live UPS values
+#     trs, risk_level = real_values_calculate_ups_risk(ups)
+
+#     # Update UPS data in DB
+#     ups.risk_score = round(trs, 3)
+#     ups.risk_level = risk_level
+#     ups.risk_created_at = datetime.utcnow()
+#     db.commit()
+#     db.refresh(ups)
+
+#     # Return response
+#     return schemas.RiskResponse(
+#         risk_score=ups.risk_score,
+#         risk_level=ups.risk_level,
+#         created_at=ups.risk_created_at.isoformat()
+#     )
+
+
+
+
+
+# Request body model
+class UPSIDRequest(BaseModel):
+    ups_id: str
+
+# TRS calculation
+def calculate_trs(ups: UPSData):
+
+    # Safe max values for normalization
+    MAX_VALUES = {
+        "I": 100.0,
+        "TUPS": 80.0,
+        "IL": 30.0,
+        "THD": 15.0
+    }
+
+    # Weight factors
+    WEIGHTS = {
+        "I": 0.2,
+        "V": 0.0,  # Not used
+        "PF": 0.1,
+        "T": 0.3,
+        "IL": 0.2,
+        "THD": 0.1
+    }
+    I_score = ups.I / MAX_VALUES["I"]
+    T_score = ups.TUPS / MAX_VALUES["TUPS"]
+    IL_score = ups.IL / MAX_VALUES["IL"]
+    THD_score = ups.THD / MAX_VALUES["THD"]
+    PF_score = 1 - ups.PF
+
+    TRS = (
+        WEIGHTS["I"] * I_score +
+        WEIGHTS["V"] * 0 +
+        WEIGHTS["PF"] * PF_score +
+        WEIGHTS["T"] * T_score +
+        WEIGHTS["IL"] * IL_score +
+        WEIGHTS["THD"] * THD_score
+    )
+
+    if TRS < 0.3:
+        risk_level = "Normal"
+    elif TRS < 0.6:
+        risk_level = "Medium"
+    else:
+        risk_level = "High"
+
+    return TRS, risk_level
+
+@app.post("/calculate_ups_risk", response_model=schemas.RiskResponse)
+def calculate_ups_risk(request: UPSIDRequest, db: Session = Depends(get_db)):
+    # Fetch UPS live data
+    ups = db.query(UPSData).filter(UPSData.ups_id == request.ups_id).first()
+    if not ups:
+        raise HTTPException(status_code=404, detail="UPS_id not found")
+
+    # Calculate TRS and risk
+    trs, risk_level = calculate_trs(ups)
+
+    # Update DB
+    ups.risk_score = round(trs, 3)
+    ups.risk_level = risk_level
+    ups.risk_created_at = datetime.utcnow()
+    db.commit()
+    db.refresh(ups)
+
+    # Return response
+    return schemas.RiskResponse(
+        risk_score=ups.risk_score,
+        risk_level=ups.risk_level,
+        created_at=ups.risk_created_at.isoformat()
+    )

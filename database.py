@@ -1,23 +1,3 @@
-# from sqlalchemy import create_engine
-# from sqlalchemy.orm import sessionmaker, declarative_base
-# import os
-# from dotenv import load_dotenv
-
-# load_dotenv()
-
-
-# MYSQL_URL = os.getenv("MYSQL_URL")
-# print("Loaded MYSQL_URL:", MYSQL_URL)  # debug
-
-
-
-# MYSQL_URL = os.getenv("MYSQL_URL")
-# print("Loaded MYSQL_URL:", MYSQL_URL)
-
-# engine = create_engine(MYSQL_URL)
-# SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-# Base = declarative_base()
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
