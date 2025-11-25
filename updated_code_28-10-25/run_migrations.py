@@ -13,13 +13,9 @@ MIGRATION_SCRIPTS = [
     "migrations.010_create_switchboard_data_table",
     "migrations.011_create_wiring_equipment_table_columns",
     # "migrations.012_update_wiring_equipment_columns",
-    "migrations.013_create_floor_data_table",
-    "migrations.014_update_user_columns_role",
-    "migrations.015_update_grid_number_column_in_layout"
-
+    "migrations.013_create_floor_data_table"
 
 ]
-
 def run_migrations():
     for script in MIGRATION_SCRIPTS:
         print(f"🚀 Running {script}")

@@ -52,8 +52,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
-    role = Column(String(50), nullable=False)
-    assigned_admin = Column(String(50), nullable=False)
     email = Column(String(100), unique=True, nullable=False, index=True)
     contact_number = Column(String(15), unique=True, nullable=False)
     password = Column(String(255), nullable=False)  
@@ -61,10 +59,6 @@ class User(Base):
     otp = Column(String(6), nullable=True)
     otp_expiry = Column(DateTime, nullable=True)
     otp_status = Column(Boolean, default=False)
-    company_name = Column(String(50), nullable=False)
-    approval_status = Column(String(20),nullable=False)
-    token_number = Column(String(200),nullable=True)
-
 
 Base = declarative_base()
 
@@ -81,7 +75,6 @@ class UPSData(Base):
     TUPS = Column(Float, nullable=False,default=0, server_default="0")
     IL = Column(Float, nullable=False,default=0, server_default="0")
     THD = Column(Float, nullable=False,default=0, server_default="0")
-
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Add risk fields
@@ -95,33 +88,33 @@ class UPSData(Base):
 class ACData(Base):
     __tablename__ = "AC_data"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    ac_id = Column(Integer, primary_key=True, autoincrement=True)
     instance_id = Column(String(100), nullable=False)  
     floor_name = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False)
     
     # Key parameters
-    Irated = Column(Float, nullable=False,default=1, server_default="0")
-    I_measured = Column(Float, nullable=False,default=1, server_default="0")
-    THD = Column(Float, nullable=False,default=1, server_default="0")
+    Irated = Column(Float, nullable=False,default=0, server_default="0")
+    I_measured = Column(Float, nullable=False,default=0, server_default="0")
+    THD = Column(Float, nullable=False,default=0, server_default="0")
     THDmax = Column(Float, default=10.0)
-    Tc = Column(Float, nullable=False,default=1, server_default="0")
+    Tc = Column(Float, nullable=False,default=0, server_default="0")
     Tsafe = Column(Float, default=75.0)
-    ESR = Column(Float, nullable=False,default=1, server_default="0")
+    ESR = Column(Float, nullable=False,default=0, server_default="0")
     ESRlimit = Column(Float, default=1.0)
-    C_drop = Column(Float, nullable=False,default=1, server_default="0")  # Capacitance deviation (fraction)
-    RHpcb = Column(Float, nullable=False,default=1, server_default="0")
+    C_drop = Column(Float, nullable=False,default=0, server_default="0")  # Capacitance deviation (fraction)
+    RHpcb = Column(Float, nullable=False,default=0, server_default="0")
     RHthreshold = Column(Float, default=80.0)
-    Ires = Column(Float, nullable=False,default=1, server_default="0")
+    Ires = Column(Float, nullable=False,default=0, server_default="0")
     Ilimit = Column(Float, default=30.0)
-    IR = Column(Float, nullable=False,default=1, server_default="0")
+    IR = Column(Float, nullable=False,default=0, server_default="0")
     
     # Calculated risk fields
     risk_score = Column(Float, nullable=True)  # FARInorm
     risk_level = Column(String(50), nullable=True)
-    risk_created_at = Column(DateTime, nullable=True)   
-    created_at = Column(DateTime, nullable=True)
-     
+    risk_created_at = Column(DateTime, nullable=True)    
+
+
 
 class BatteryLiveData(Base):
     __tablename__ = "battery_live_data"
@@ -143,7 +136,6 @@ class BatteryLiveData(Base):
     risk_score = Column(Float, nullable=True)
     risk_level = Column(String(50), nullable=True)
     risk_created_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=True)
     
 
 
@@ -190,6 +182,7 @@ class WiringEquipmentData(Base):
     # risk_created_at = Column(DateTime, nullable=True)
     # email = Column(String(100), nullable=False)    
 
+
     current = Column(Float, nullable=False, default=0, server_default="0")
     voltage_drop = Column(Float, nullable=False, default=0, server_default="0")
     leakage_current = Column(Float, nullable=False, default=0, server_default="0")
@@ -212,12 +205,9 @@ class ComponentLayout(Base):
     floor_name = Column(String(100), nullable=False)
     component_name = Column(String(100), nullable=False)
     instance_id = Column(String(100), nullable=False)
-    position_x = Column(Float, nullable=False,default=0)
-    position_y = Column(Float, nullable=False,default=0)  
-    # grid_number = Column(Integer, nullable=False)
-    grid_number = Column(Integer, nullable=False, default=0)
-    location = Column(String(100), nullable=True)
-   
+    position_x = Column(Float, nullable=False)
+    position_y = Column(Float, nullable=False)  
+
     _table_args__ = (
         UniqueConstraint('user_name', 'floor_name', 'instance_id', name='unique_component_instance'),
     )  
@@ -229,18 +219,10 @@ class FloorData(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False, unique=True)
-    num_floors = Column(Integer, nullable=False)   
+    num_floors = Column(Integer, nullable=False)    
 
 
-class Component(Base):
-    __tablename__ = "components"
 
-    id = Column(Integer, primary_key=True, index=True)
-    floor_name = Column(String(50))
-    component_name = Column(String(50))
-    instance_id = Column(String(50))
-    position_x = Column(Float)
-    position_y = Column(Float)
-    grid_number = Column(Integer)
-    user_name = Column(String(100))
-    location = Column(String(50))
+
+    
+     
