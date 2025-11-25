@@ -4683,7 +4683,6 @@ async def save_token_details(request: SaveTokenRequest, db: Session = Depends(ge
             status_code=404,
             detail="User not found"
         )
-
     # Save / update token number
     user.token_number = request.token_number
     db.commit()
@@ -4696,7 +4695,6 @@ async def save_token_details(request: SaveTokenRequest, db: Session = Depends(ge
     }
 
 # DATABASE_URL = "mysql+pymysql://root:root@localhost:3306/fire_prediction_db"
-
 # engine = create_engine(DATABASE_URL)
 # metadata = MetaData()
 # metadata.reflect(bind=engine)
@@ -4806,13 +4804,88 @@ async def save_token_details(request: SaveTokenRequest, db: Session = Depends(ge
 #     )
 
 
+# DATABASE_URL = os.getenv("MYSQL_URL")
+
+# # Database URL
+# # DATABASE_URL = "mysql+pymysql://root:root@localhost:3306/fire_prediction_db"
+# engine = create_engine(DATABASE_URL)
+# metadata = MetaData()
+# metadata.reflect(bind=engine)
+# component_layouts = metadata.tables['component_layouts']
+
+# # Request body model
+# class UserRequest(BaseModel):
+#     user_name: str
+
+# @app.post("/export_equipment/")
+# def export_equipment(request: UserRequest):
+#     user_name = request.user_name
+
+#     # Fetch data for the user
+#     query = select(
+#         component_layouts.c.floor_name,
+#         component_layouts.c.component_name,
+#         component_layouts.c.instance_id,
+#         component_layouts.c.grid_number,
+#         component_layouts.c.location
+#     ).where(component_layouts.c.user_name == user_name)
+
+#     with engine.connect() as conn:
+#         result = conn.execute(query)
+#         rows = result.fetchall()
+
+#     if not rows:
+#         raise HTTPException(status_code=404, detail="No data found for this user")
+
+#     # Paths
+#     project_dir = Path(__file__).parent
+#     template_path = project_dir / "Equipments_details_file" / "components_template.xlsx"
+#     today = datetime.now().strftime("%Y-%m-%d")
+#     file_name = f"{user_name}-{today}.xlsx"
+#     save_path = project_dir / "Equipments_details_file" / file_name
+
+#     # Load template
+#     wb = load_workbook(template_path)
+#     ws = wb.active
+
+#     # Unprotect the sheet if protected
+#     ws.protection.sheet = False
+
+#     # Clear existing data from row 2
+#     if ws.max_row > 1:
+#         ws.delete_rows(2, ws.max_row - 1)
+
+#     # Write data to sheet and unlock all cells
+#     for i, row in enumerate(rows, start=2):
+#         ws.cell(row=i, column=1, value=row.floor_name).protection = None
+#         ws.cell(row=i, column=2, value=row.component_name).protection = None
+#         ws.cell(row=i, column=3, value=row.instance_id).protection = None
+#         ws.cell(row=i, column=4, value=row.grid_number).protection = None
+#         ws.cell(row=i, column=5, value=row.location).protection = None
+
+#     #Do NOT protect the sheet, leave it editable
+#     # Data validation in template for grid_number remains intact
+
+#     wb.save(save_path)
+
+#     return FileResponse(
+#         path=save_path,
+#         filename=file_name,
+#         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+#     )
 
 
-# Database URL
-DATABASE_URL = "mysql+pymysql://root:root@localhost:3306/fire_prediction_db"
+
+
+# Fetch DB URL from .env
+DATABASE_URL = os.getenv("MYSQL_URL")
+
+# Create DB engine
 engine = create_engine(DATABASE_URL)
 metadata = MetaData()
 metadata.reflect(bind=engine)
+
+# Table reference
 component_layouts = metadata.tables['component_layouts']
 
 # Request body model
@@ -4839,7 +4912,7 @@ def export_equipment(request: UserRequest):
     if not rows:
         raise HTTPException(status_code=404, detail="No data found for this user")
 
-    # Paths
+    #Paths
     project_dir = Path(__file__).parent
     template_path = project_dir / "Equipments_details_file" / "components_template.xlsx"
     today = datetime.now().strftime("%Y-%m-%d")
@@ -4850,30 +4923,41 @@ def export_equipment(request: UserRequest):
     wb = load_workbook(template_path)
     ws = wb.active
 
-    # Unprotect the sheet if protected
+    # Remove protection to modify the sheet
     ws.protection.sheet = False
 
-    # Clear existing data from row 2
+    # Clear existing data from row 2 onwards
     if ws.max_row > 1:
         ws.delete_rows(2, ws.max_row - 1)
 
-    # Write data to sheet and unlock all cells
+    # Write data to sheet
     for i, row in enumerate(rows, start=2):
-        ws.cell(row=i, column=1, value=row.floor_name).protection = None
-        ws.cell(row=i, column=2, value=row.component_name).protection = None
-        ws.cell(row=i, column=3, value=row.instance_id).protection = None
-        ws.cell(row=i, column=4, value=row.grid_number).protection = None
-        ws.cell(row=i, column=5, value=row.location).protection = None
+        ws.cell(row=i, column=1, value=row.floor_name)
+        ws.cell(row=i, column=2, value=row.component_name)
+        ws.cell(row=i, column=3, value=row.instance_id)
+        ws.cell(row=i, column=4, value=row.grid_number)
+        ws.cell(row=i, column=5, value=row.location)
 
-    #Do NOT protect the sheet, leave it editable
-    # Data validation in template for grid_number remains intact
+    
+    # 1️⃣ Lock Row 1 (header row)
+    for cell in ws[1]:
+        cell.protection = Protection(locked=True)
 
+    # 2️⃣ Unlock all rows starting from Row 2
+    for row in ws.iter_rows(min_row=2):
+        for cell in row:
+            cell.protection = Protection(locked=False)
+
+    # 3️⃣ Enable sheet protection
+    ws.protection.sheet = True
+    ws.protection.enable()
+
+    # Save file
     wb.save(save_path)
 
+    # Return generated Excel file
     return FileResponse(
         path=save_path,
         filename=file_name,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-
-
