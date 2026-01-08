@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from pydantic import BaseModel, EmailStr, validator
 import os
+
 import random
 import pytz
 from datetime import datetime, timedelta
@@ -490,16 +491,16 @@ async def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
     email = request.email
     otp = request.otp
 
-    # 1️⃣ Find user by email
+    #Find user by email
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 2️⃣ Check if OTP matches
+    # Check if OTP matches
     if user.otp != otp:
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
-    # 3️⃣ Check if OTP expired (IST)
+    # Check if OTP expired (IST)
     if not user.otp_expiry:
         raise HTTPException(status_code=400, detail="OTP not generated")
 
@@ -510,7 +511,7 @@ async def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
     if now_ist > user.otp_expiry:
         raise HTTPException(status_code=400, detail="OTP expired")
 
-    # 4️⃣ Mark OTP as verified
+    # Mark OTP as verified
     user.otp_status = True
     db.commit()
     db.refresh(user)
@@ -638,24 +639,24 @@ async def test_email():
 
 # @app.post("/login")
 # def login(request: LoginRequest, db: Session = Depends(get_db)):
-#     # 🔹 Find user by email
+#     # Find user by email
 #     user = db.query(User).filter(User.email == request.email).first()
 
 #     if not user:
 #         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-#     # 🔹 Verify password
+#     # Verify password
 #     if not pwd_context.verify(request.password, user.password):
 #         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-#     # 🔹 Check OTP verification status
+#     # Check OTP verification status
 #     if not user.otp_status:
 #         raise HTTPException(
 #             status_code=403,
 #             detail="Please verify your OTP before logging in"
 #         )
 
-#     # 🔹 Return user info (including role and assigned admin)
+#     # Return user info (including role and assigned admin)
 #     return {
 #         "message": "Login successful",
 #         "user": {
@@ -670,24 +671,24 @@ async def test_email():
 
 @app.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    # 🔹 Find user by email
+    #  Find user by email
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    # 🔹 Verify password
+    #  Verify password
     if not pwd_context.verify(request.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    # 🔹 Check OTP verification status
+    #  Check OTP verification status
     if not user.otp_status:
         raise HTTPException(
             status_code=403,
             detail="Please verify your OTP before logging in"
         )
 
-    # 🔹 Check approval status
+    #  Check approval status
     if user.approval_status == "Pending":
         raise HTTPException(
             status_code=403,
@@ -700,7 +701,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="Your registration details has been rejected by the admin."
         )
 
-    # 🔹 If approval_status is Accepted → login success
+    #  If approval_status is Accepted → login success
     return {
         "message": "Login successful",
         "user": {
@@ -2514,11 +2515,6 @@ def get_user_panel_details(request: UserEmailRequest, db: Session = Depends(get_
     )
 
 
-
-
-
-
-
 class RiskCalculationRequest(BaseModel):
     instance_id: str
 
@@ -2597,7 +2593,7 @@ def sigmoid(x):
 #         "risk_level": risk_level,
 #     }
 
-# ---------------------Calculation of all AC risk working code -------------------------
+# ---------------------Calculation of all AC risk working code ---------------------------------------------
 # FARI calculation function (unchanged)
 def calculate_fari(ac_data):
     α1, α2 = 0.7, 0.3
@@ -2622,7 +2618,6 @@ def calculate_fari(ac_data):
     #     risk_level = "High"
     # else:
     #     risk_level = "High"
-
 
     if FARInorm < 0.5:
         risk_level = "Normal"
@@ -2893,7 +2888,6 @@ def add_or_update_floor_data(request: FloorDataCreate, db: Session = Depends(get
 
 
 
-    
 class EmailRequest(BaseModel):
     email: EmailStr
 
@@ -4085,40 +4079,6 @@ async def auto_update_ups_data():
 
 
 
-#--------------------------- BACKGROUND TASK ---------------------------
-async def run_all_risk_calculations_periodically():
-    """Run all risk APIs every 5 seconds automatically."""
-    await asyncio.sleep(3)  # wait until app fully starts
-
-    while True:
-        try:
-            print(f"\n[{datetime.utcnow()}] --- Running all risk calculations ---")
-            db = SessionLocal()
-
-            # Call each function directly (no HTTP)
-            # calculate_all_ac_risks(db)
-            # calculate_battery_risk_all_api(db)
-            # calculate_all_ups_risk(db)
-            # calculate_risk_all(db)
-            # calculate_wiring_risk_all()
-            # calculate_switchboard_risk_api(db)
-
-            db.close()
-            print(f"[{datetime.utcnow()}] --- Risk calculations done ---\n")
-
-        except Exception as e:
-            print(f"[ERROR] Background risk calculation failed: {e}")
-
-        await asyncio.sleep(5)  # wait 5 seconds before next run
-
-
-# #---------------- START ON SERVER LAUNCH ----------------------------------
-# @app.on_event("startup")
-# async def start_background_tasks():
-#     asyncio.create_task(run_all_risk_calculations_periodically())
-#     # asyncio.create_task(auto_update_battery_data())
-#     # asyncio.create_task(auto_update_ac_data())
-#     asyncio.create_task(auto_update_ups_data())
 
 
 # @app.post("/upload_excel", response_model=schemas.MessageResponse)
@@ -4874,9 +4834,6 @@ async def save_token_details(request: SaveTokenRequest, db: Session = Depends(ge
 #         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 #     )
 
-
-
-
 # Fetch DB URL from .env
 DATABASE_URL = os.getenv("MYSQL_URL")
 
@@ -4939,20 +4896,20 @@ def export_equipment(request: UserRequest):
         ws.cell(row=i, column=5, value=row.location)
 
     
-    # 1️⃣ Lock Row 1 (header row)
+    #Lock Row 1 (header row)
     for cell in ws[1]:
         cell.protection = Protection(locked=True)
 
-    # 2️⃣ Unlock all rows starting from Row 2
+    #Unlock all rows starting from Row 2
     for row in ws.iter_rows(min_row=2):
         for cell in row:
             cell.protection = Protection(locked=False)
 
-    # 3️⃣ Enable sheet protection
+    #Enable sheet protection
     ws.protection.sheet = True
     ws.protection.enable()
 
-    # Save file
+    #Save file
     wb.save(save_path)
 
     # Return generated Excel file
@@ -4961,3 +4918,39 @@ def export_equipment(request: UserRequest):
         filename=file_name,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+
+#--------------------------- BACKGROUND TASK ---------------------------
+async def run_all_risk_calculations_periodically():
+    """Run all risk APIs every 5 seconds automatically."""
+    await asyncio.sleep(3)  # wait until app fully starts
+
+    while True:
+        try:
+            print(f"\n[{datetime.utcnow()}] --- Running all risk calculations ---")
+            db = SessionLocal()
+
+            # Call each function directly (no HTTP)
+            calculate_all_ac_risks(db)
+            # calculate_battery_risk_all_api(db)
+            # calculate_all_ups_risk(db)
+            # calculate_risk_all(db)
+            # calculate_wiring_risk_all()
+            # calculate_switchboard_risk_api(db)
+
+            db.close()
+            print(f"[{datetime.utcnow()}] --- Risk calculations done ---\n")
+
+        except Exception as e:
+            print(f"[ERROR] Background risk calculation failed: {e}")
+
+        await asyncio.sleep(5)  # wait 5 seconds before next run
+
+
+#------------  START ON SERVER LAUNCH  ----------------
+@app.on_event("startup")
+async def start_background_tasks():
+    asyncio.create_task(run_all_risk_calculations_periodically())
+    # asyncio.create_task(auto_update_battery_data())
+    asyncio.create_task(auto_update_ac_data())
+    # asyncio.create_task(auto_update_ups_data())

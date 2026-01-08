@@ -116,7 +116,7 @@ class ACData(Base):
     Ilimit = Column(Float, default=30.0)
     IR = Column(Float, nullable=False,default=1, server_default="0")
     
-    # Calculated risk fields
+    #Calculated risk fields
     risk_score = Column(Float, nullable=True)  # FARInorm
     risk_level = Column(String(50), nullable=True)
     risk_created_at = Column(DateTime, nullable=True)   
@@ -129,7 +129,7 @@ class BatteryLiveData(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     instance_id = Column(String(100), nullable=False)  
     floor_name = Column(String(100), nullable=False)
-    email = Column(String(100), nullable=False) 
+    email = Column(String(100), nullable=False)
 
     # Live measured / predicted values
     I_meas = Column(Float, nullable=False,default=0, server_default="0")       # Current (A)

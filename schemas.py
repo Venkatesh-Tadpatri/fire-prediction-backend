@@ -48,7 +48,7 @@ class UserCreate(BaseModel):
     #         raise ValueError("Contact number must be 10 digits")
     #     return v
 
-    # # ✅ Password fields validation
+    # #  Password fields validation
     # @validator("password", "confirm_password")
     # def password_not_empty(cls, v, field):
     #     if not v or v.strip() == "":
@@ -86,7 +86,7 @@ class UserCreate(BaseModel):
 
 
 
-     # ✅ Contact number validation
+     #  Contact number validation
     @field_validator("contact_number")
     @classmethod
     def contact_must_be_10_digits(cls, v):
@@ -94,7 +94,7 @@ class UserCreate(BaseModel):
             raise ValueError("Contact number must be 10 digits")
         return v
 
-    # ✅ Password non-empty validation
+    #  Password non-empty validation
     @field_validator("password", "confirm_password")
     @classmethod
     def password_not_empty(cls, v, info):
@@ -102,14 +102,14 @@ class UserCreate(BaseModel):
             raise ValueError(f"{info.field_name.replace('_', ' ').capitalize()} cannot be empty")
         return v
 
-    # ✅ Cross-field password match validation
+    #  Cross-field password match validation
     @model_validator(mode="after")
     def passwords_match(self):
         if self.password != self.confirm_password:
             raise ValueError("Passwords do not match")
         return self
 
-    # ✅ Role validation
+    #  Role validation
     @field_validator("role")
     @classmethod
     def validate_role(cls, v):
@@ -119,7 +119,7 @@ class UserCreate(BaseModel):
             raise ValueError("Role must be either 'user' or 'admin'")
         return v.strip()
 
-    # ✅ Assigned admin validation (depends on role and email)
+    #  Assigned admin validation (depends on role and email)
     @model_validator(mode="after")
     def validate_assigned_admin(self):
         if self.role == "user":
@@ -212,7 +212,7 @@ class ACRiskResponse(BaseModel):
     risk_level: str
     created_at: str   
 
-# # ✅ Request model for a single component layout
+# #  Request model for a single component layout
 # class ComponentLayoutBase(BaseModel):
 #     user_name: str
 #     floor_name: str
@@ -244,24 +244,22 @@ class SaveTokenRequest(BaseModel):
     email: EmailStr
     token_number: str = Field(..., min_length=5, max_length=200)    
 
-    
-    
 
 class ComponentCreateRequest(BaseModel):
     user_name: str
     components: List[ComponentBase]
 
 
-# ✅ Extends your existing ComponentBase with user_name
+# Extends your existing ComponentBase with user_name
 class Component(ComponentBase):
     user_name: str
 
-# ✅ Used by save_components and upload_excel
+#  Used by save_components and upload_excel
 class ComponentCreateRequest(BaseModel):
     user_name: str
     components: List[ComponentBase]
 
-# ✅ For uniform success messages
+#  For uniform success messages
 class MessageResponse(BaseModel):
     message: str    
 
